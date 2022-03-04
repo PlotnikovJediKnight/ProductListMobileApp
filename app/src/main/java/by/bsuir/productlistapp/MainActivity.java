@@ -119,6 +119,8 @@ public class MainActivity extends AppCompatActivity {
     public static long NIRVANA_SONGS_COUNT = 0;
     public static long GROB_SONGS_COUNT = 0;
 
+    public static SongCoverImageLRUCache lru = new SongCoverImageLRUCache(1024*1024/8);
+
     @SuppressLint("MissingSuperCall")
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {

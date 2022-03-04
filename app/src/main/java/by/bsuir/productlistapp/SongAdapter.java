@@ -1,6 +1,7 @@
 package by.bsuir.productlistapp;
 
 import static by.bsuir.productlistapp.MainActivity.dbHelper;
+import static by.bsuir.productlistapp.MainActivity.lru;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -35,19 +36,25 @@ public class SongAdapter extends ArrayAdapter<Song> {
     TextView currency;
     Button addToCart;
 
+
     public SongAdapter(@NonNull Context context, int resource, @NonNull List<Song> songsList) {
         super(context, resource, songsList);
     }
 
     static class SongCoverHolder{
+        private Song song;
         private ImageView imageView;
 
-        public SongCoverHolder(ImageView itemView){
+        public SongCoverHolder(ImageView itemView, Song song){
+            this.song = song;
             imageView = itemView;
         }
 
         public void bindSongCoverImage(Drawable drawable){
             imageView.setImageDrawable(drawable);
+            synchronized (MainActivity.lru){
+                lru.put(song.getCoverUrl(),drawable);
+            }
         }
     }
 
@@ -92,10 +99,17 @@ public class SongAdapter extends ArrayAdapter<Song> {
             }
         });
 
-        SongCoverHolder songCoverHolder = new SongCoverHolder(songImage);
+        SongCoverHolder songCoverHolder = new SongCoverHolder(songImage, song);
         songImage.setImageDrawable(MainActivity.mainActivityContext.getDrawable(R.drawable.ic_default_image));
 
-        if (MainActivity.isNetworkAvailable()) MainActivity.songImageDownloader.queueSongImage(songCoverHolder, song.getCoverUrl());
+        if (MainActivity.isNetworkAvailable()) {
+            String coverUrl = song.getCoverUrl();
+
+            synchronized (MainActivity.lru) {
+                if (MainActivity.lru.getBitmapFromMemory(coverUrl) == null)
+                    MainActivity.songImageDownloader.queueSongImage(songCoverHolder, song.getCoverUrl());
+            }
+        }
 
         songName.setText(song.getName());
         albumName.setText(song.getAlbum());
